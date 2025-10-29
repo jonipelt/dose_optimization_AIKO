@@ -1,0 +1,11 @@
+# Ignore all contents in the data directory
+data/*
+
+# But keep the folder itself visible in the repo
+!data/.gitkeep
+
+# Python cache and virtual environment folders
+__pycache__/
+*.pyc
+.venv/
+env/
