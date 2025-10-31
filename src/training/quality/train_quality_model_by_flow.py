@@ -13,10 +13,10 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 DATA_PATH = "data/cleaned_training_data.csv"  # Change this to your actual file
 
 # Output directory for trained models
-MODEL_OUTPUT_DIR = "models/flow_based_ph"  # Change if needed
+MODEL_OUTPUT_DIR = "models/flow_based"  # Change if needed
 
 # Output path for saving model evaluation metrics
-METRICS_OUTPUT_PATH = "models/metrics/metrics_ph_flow.csv"  # Change if needed
+METRICS_OUTPUT_PATH = "models/metrics/metrics_quality_flow.csv"  # Change if needed
 
 os.makedirs(MODEL_OUTPUT_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(METRICS_OUTPUT_PATH), exist_ok=True)
@@ -59,10 +59,10 @@ df = df.dropna(subset=required_cols)
 df["basin_count"] = df["tuleva_virtaus"].apply(calculate_basin_count)
 df["flow_class"] = df["tuleva_virtaus"].apply(classify_flow)
 
-# Filter data within quality range for flotation turbidity
+# Keep only rows where flotation turbidity is within target range
 df = df[(df["flotaatio_sameus"] >= 0.5) & (df["flotaatio_sameus"] <= 1.0)].copy()
 
-# Remove spurious low-dose outliers
+# Remove spurious dose outliers
 dose_array = df["kemikaaliannos"].values
 mask = np.ones(len(df), dtype=bool)
 
@@ -79,10 +79,10 @@ print(f"Removed {np.sum(~mask)} rows with anomalously low chemical dose.")
 metrics = []
 
 def train_model_for_flow_class(flow_class, df_sub):
-    print(f"\nTraining pH prediction model for flow class: {flow_class} ({len(df_sub)} rows)")
+    print(f"\nTraining quality model for flow class: {flow_class} ({len(df_sub)} rows)")
 
-    features = ["raaka_sameus", "tuleva_virtaus", "tuleva_lampotila", "basin_count"]
-    target = "alku_pH"
+    features = ["raaka_sameus", "tuleva_virtaus", "tuleva_lampotila", "alku_pH", "basin_count", "kemikaaliannos"]
+    target = "flotaatio_sameus"
 
     X = df_sub[features]
     y = df_sub[target]
@@ -127,7 +127,7 @@ def train_model_for_flow_class(flow_class, df_sub):
 
     segment_analysis(df_sub.iloc[X_val.index], y_val, y_pred, "flow_class")
 
-    model_filename = f"ph_model_flow_{flow_class}.pkl"
+    model_filename = f"quality_model_flow_{flow_class}.pkl"
     joblib.dump(model, os.path.join(MODEL_OUTPUT_DIR, model_filename))
     print(f"Saved model to: {model_filename}")
 
@@ -140,7 +140,7 @@ def train_model_for_flow_class(flow_class, df_sub):
         "rows": len(df_sub)
     })
 
-# Train models for each flow class
+# Train models per flow class
 for flow_class in df["flow_class"].dropna().unique():
     subset = df[df["flow_class"] == flow_class]
     if len(subset) < 100:

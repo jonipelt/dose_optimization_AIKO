@@ -13,10 +13,10 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 DATA_PATH = "data/cleaned_training_data.csv"  # Change this to your actual file
 
 # Output directory for trained models
-MODEL_OUTPUT_DIR = "models/flow_based_ph"  # Change if needed
+MODEL_OUTPUT_DIR = "models/temperature_based"  # Change if needed
 
 # Output path for saving model evaluation metrics
-METRICS_OUTPUT_PATH = "models/metrics/metrics_ph_flow.csv"  # Change if needed
+METRICS_OUTPUT_PATH = "models/metrics/metrics_quality_temp.csv"  # Change if needed
 
 os.makedirs(MODEL_OUTPUT_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(METRICS_OUTPUT_PATH), exist_ok=True)
@@ -26,13 +26,13 @@ os.makedirs(os.path.dirname(METRICS_OUTPUT_PATH), exist_ok=True)
 def calculate_basin_count(flow_rate: float) -> int:
     return 2 if flow_rate < 1300 else 3
 
-def classify_flow(flow: float) -> str:
-    if 700 <= flow < 950:
-        return "low"
-    elif 950 <= flow < 1100:
-        return "medium"
-    elif 1100 <= flow <= 2200:
-        return "high"
+def classify_temperature(temp: float) -> str:
+    if temp < 10:
+        return "cold"
+    elif 10 <= temp < 18:
+        return "moderate"
+    elif temp >= 18:
+        return "warm"
     return "other"
 
 def segment_analysis(df, y_true, y_pred, segment_column):
@@ -57,12 +57,12 @@ required_cols = ["raaka_sameus", "tuleva_virtaus", "tuleva_lampotila", "alku_pH"
 
 df = df.dropna(subset=required_cols)
 df["basin_count"] = df["tuleva_virtaus"].apply(calculate_basin_count)
-df["flow_class"] = df["tuleva_virtaus"].apply(classify_flow)
+df["temp_class"] = df["tuleva_lampotila"].apply(classify_temperature)
 
-# Filter data within quality range for flotation turbidity
+# Keep only rows where flotation turbidity is within target range
 df = df[(df["flotaatio_sameus"] >= 0.5) & (df["flotaatio_sameus"] <= 1.0)].copy()
 
-# Remove spurious low-dose outliers
+# Remove spurious dose outliers
 dose_array = df["kemikaaliannos"].values
 mask = np.ones(len(df), dtype=bool)
 
@@ -78,11 +78,11 @@ print(f"Removed {np.sum(~mask)} rows with anomalously low chemical dose.")
 
 metrics = []
 
-def train_model_for_flow_class(flow_class, df_sub):
-    print(f"\nTraining pH prediction model for flow class: {flow_class} ({len(df_sub)} rows)")
+def train_model_for_temp_class(temp_class, df_sub):
+    print(f"\nTraining quality model for temperature class: {temp_class} ({len(df_sub)} rows)")
 
-    features = ["raaka_sameus", "tuleva_virtaus", "tuleva_lampotila", "basin_count"]
-    target = "alku_pH"
+    features = ["raaka_sameus", "tuleva_virtaus", "tuleva_lampotila", "alku_pH", "basin_count", "kemikaaliannos"]
+    target = "flotaatio_sameus"
 
     X = df_sub[features]
     y = df_sub[target]
@@ -102,7 +102,7 @@ def train_model_for_flow_class(flow_class, df_sub):
             "random_state": 42,
             "verbosity": -1
         }
-        model = lgb.LGBMRegressor(**params)
+        model = lgb.LGBMRegressor(**params, verbosity=-1)
         model.fit(X_train, y_train)
         preds = model.predict(X_val)
         return mean_squared_error(y_val, preds) ** 0.5
@@ -125,28 +125,28 @@ def train_model_for_flow_class(flow_class, df_sub):
     print(f"  MAE:  {mae:.4f}")
     print(f"  R²:   {r2:.4f}")
 
-    segment_analysis(df_sub.iloc[X_val.index], y_val, y_pred, "flow_class")
+    segment_analysis(df_sub.iloc[X_val.index], y_val, y_pred, "temp_class")
 
-    model_filename = f"ph_model_flow_{flow_class}.pkl"
+    model_filename = f"quality_model_sameus_{temp_class}.pkl"
     joblib.dump(model, os.path.join(MODEL_OUTPUT_DIR, model_filename))
     print(f"Saved model to: {model_filename}")
 
     metrics.append({
         "model": model_filename,
-        "class": flow_class,
+        "class": temp_class,
         "RMSE": round(rmse, 4),
         "MAE": round(mae, 4),
         "R2": round(r2, 4),
         "rows": len(df_sub)
     })
 
-# Train models for each flow class
-for flow_class in df["flow_class"].dropna().unique():
-    subset = df[df["flow_class"] == flow_class]
+# Train model per temperature class
+for temp_class in df["temp_class"].dropna().unique():
+    subset = df[df["temp_class"] == temp_class]
     if len(subset) < 100:
-        print(f"Skipping {flow_class}: insufficient data")
+        print(f"Skipping {temp_class}: insufficient data")
         continue
-    train_model_for_flow_class(flow_class, subset)
+    train_model_for_temp_class(temp_class, subset)
 
 # Save metrics
 pd.DataFrame(metrics).sort_values("class").to_csv(METRICS_OUTPUT_PATH, sep=";", decimal=",", index=False)

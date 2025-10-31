@@ -1,5 +1,3 @@
-# train_ph_temp.py
-
 import os
 import joblib
 import optuna
@@ -55,10 +53,9 @@ def segment_analysis(df, y_true, y_pred, segment_column):
 # Data Loading & Preprocessing
 
 df = pd.read_csv(DATA_PATH, sep=";", decimal=",", on_bad_lines='skip')
-
 required_cols = ["raaka_sameus", "tuleva_virtaus", "tuleva_lampotila", "alku_pH", "kemikaaliannos", "flotaatio_sameus"]
-df = df.dropna(subset=required_cols)
 
+df = df.dropna(subset=required_cols)
 df["basin_count"] = df["tuleva_virtaus"].apply(calculate_basin_count)
 df["temp_class"] = df["tuleva_lampotila"].apply(classify_temperature)
 
@@ -144,7 +141,6 @@ def train_model_for_temp_class(temp_class, df_sub):
     })
 
 # Train models for all temperature classes
-
 for temp_class in df["temp_class"].unique():
     subset = df[df["temp_class"] == temp_class]
     if len(subset) < 100:
