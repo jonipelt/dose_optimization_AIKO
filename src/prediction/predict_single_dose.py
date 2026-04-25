@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 from model_selector import (
-    predict_pH_avg,
+    predict_ph_avg,
     predict_dose_avg,
-    predict_sameus_avg,
+    predict_quality_avg,
     predict_final_pH
 )
 
@@ -39,7 +39,7 @@ def predict_single_case(raaka_sameus, tuleva_virtaus, tuleva_lampotila):
         })
 
         # Predict initial pH
-        predicted_pH = predict_pH_avg(base)
+        predicted_pH = predict_ph_avg(base)
         predicted_pH = np.clip(predicted_pH, MIN_PH, MAX_PH)
 
         # Predict chemical dose
@@ -57,7 +57,7 @@ def predict_single_case(raaka_sameus, tuleva_virtaus, tuleva_lampotila):
         # Predict turbidity
         quality_input = dose_input.copy()
         quality_input["kemikaaliannos"] = predicted_dose
-        predicted_sameus = predict_sameus_avg(quality_input)
+        predicted_sameus = predict_quality_avg(quality_input)
 
         fallback_used = False
         rounded_sameus = round(predicted_sameus, 1)
@@ -77,7 +77,7 @@ def predict_single_case(raaka_sameus, tuleva_virtaus, tuleva_lampotila):
                     row = base.copy()
                     row["alku_pH"] = round(pH, 2)
                     row["kemikaaliannos"] = round(dose, 2)
-                    turbidity = predict_sameus_avg(row)
+                    turbidity = predict_quality_avg(row)
                     if np.isnan(turbidity):
                         continue
                     turbidity_rounded = round(turbidity, 1)

@@ -2,9 +2,9 @@ import os
 import pandas as pd
 import numpy as np
 from model_selector import (
-    predict_pH_avg,
+    predict_ph_avg,
     predict_dose_avg,
-    predict_sameus_avg,
+    predict_quality_avg,
     predict_final_pH
 )
 
@@ -53,7 +53,7 @@ def optimize_combination_table():
                 }
 
                 # Predict initial pH and clip within limits
-                init_pH = predict_pH_avg(pd.Series(base_input))
+                init_pH = predict_ph_avg(pd.Series(base_input))
                 init_pH = np.clip(init_pH, MIN_PH, MAX_PH)
 
                 # Predict dose and ensure within bounds
@@ -69,7 +69,7 @@ def optimize_combination_table():
 
                 # Predict quality outcomes
                 quality_input = pd.Series({**dose_input, "kemikaaliannos": dose})
-                pred_sameus = predict_sameus_avg(quality_input)
+                pred_sameus = predict_quality_avg(quality_input)
                 pred_final_pH = predict_final_pH(quality_input)
 
                 # Store values
