@@ -27,7 +27,7 @@ The project is **not expected to run as-is** without project-specific data and m
 
 - `models/` – Storage for trained models (not included)
 
-- `notebooks/` – Optional analysis and visualization
+- `notebooks/` – Optional analysis and visualization (not included)
 
 ---
 
