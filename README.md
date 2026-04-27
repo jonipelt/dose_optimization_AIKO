@@ -6,7 +6,9 @@ The goal is to improve process efficiency, reduce chemical usage, and maintain c
 
 ## Note
 
-This repository contains example code developed as part of the AIKO project.
+This repository contains example code developed as part of the AIKO TAMK project. The project is co-financed by the EU. 
+
+Link to the project: https://projects.tuni.fi/aiko/
 
 - The original datasets are **not included**
 - Trained model files are **not included**
