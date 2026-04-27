@@ -34,6 +34,10 @@ The project is **not expected to run as-is** without project-specific data and m
 ## Installation
 
 ```bash
-python -m venv .venv
-.\.venv\Scripts\activate   # Windows
-pip install -r requirements.txt
+python -m venv .venv              # Windows
+.\.venv\Scripts\activate          # Windows
+pip install -r requirements.txt   # Windows
+
+python3 -m venv .venv             # Mac
+source .venv/bin/activate         # Mac
+pip install -r requirements.txt   # Mac
